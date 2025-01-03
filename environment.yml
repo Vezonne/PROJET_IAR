@@ -1,6 +1,6 @@
 # environment.yml
 
-name: j:\Master\S3\IAR\PROJET\.conda
+name: envconda
 channels:
   - defaults
 dependencies:
@@ -21,4 +21,4 @@ dependencies:
   - zlib=1.2.13=h8cc25b3_1
   - pip:
       - pygame==2.6.1
-prefix: j:\Master\S3\IAR\PROJET\.conda
+

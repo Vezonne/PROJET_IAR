@@ -6,9 +6,9 @@ import random
 pygame.init()
 
 # Configuration de l'écran
-WIDTH, HEIGHT = 800, 600
-screen = pygame.display.set_mode((WIDTH, HEIGHT))
-pygame.display.set_caption("Simulateur d'Animat")
+WIDTH, HEIGHT = 600, 600 # Taille de l'écran
+screen = pygame.display.set_mode((WIDTH, HEIGHT)) # Création de l'écran
+pygame.display.set_caption("Simulateur d'Animat") # Titre de la fenêtre
 
 # Couleurs
 WHITE = (247, 247, 255)
@@ -50,7 +50,7 @@ class Object:
         self.y = y
         self.color = color
         self.type = obj_type  # "food", "water" ou "trap"
-        self.radius = 10
+        self.radius = 16
 
     def draw(self, screen):
         pygame.draw.circle(screen, self.color, (self.x, self.y), self.radius)
@@ -81,7 +81,7 @@ class Robot:
             self.battery2 -= 0.1  # Dégradation de la batterie 2
 
             # Vérifier si les batteries sont vides
-            if self.battery1 <= 0 or self.battery2 <= 0:
+            if self.battery1 <= 0 and self.battery2 <= 0:
                 self.alive = False  # Le robot meurt
 
             # Mise à jour de la position basée sur les vitesses des roues
@@ -201,32 +201,36 @@ def main():
     # Création du robot et des objets dans l'environnement
     robot = Robot(WIDTH // 2, HEIGHT // 2)
     objects = [
-        Object(
-            random.randint(50, WIDTH - 50),
-            random.randint(50, HEIGHT - 50),
-            GREEN,
-            "food",
-        ),
-        Object(
-            random.randint(50, WIDTH - 50),
-            random.randint(50, HEIGHT - 50),
-            GREEN,
-            "food",
-        ),
-        Object(
-            random.randint(50, WIDTH - 50), random.randint(50, HEIGHT - 50), RED, "trap"
-        ),
-        Object(
-            random.randint(50, WIDTH - 50),
-            random.randint(50, HEIGHT - 50),
-            BLUE,
-            "water",
-        ),
+        # 3 objets de nourriture
+        Object(random.randint(50, WIDTH - 50), random.randint(50, HEIGHT - 50), GREEN, "food"),
+        Object(random.randint(50, WIDTH - 50), random.randint(50, HEIGHT - 50), GREEN, "food"),
+        Object(random.randint(50, WIDTH - 50), random.randint(50, HEIGHT - 50), GREEN, "food"),
+
+        # 3 objets d'eau
+        Object(random.randint(50, WIDTH - 50), random.randint(50, HEIGHT - 50), BLUE, "water"),
+        Object(random.randint(50, WIDTH - 50), random.randint(50, HEIGHT - 50), BLUE, "water"),
+        Object(random.randint(50, WIDTH - 50), random.randint(50, HEIGHT - 50), BLUE, "water"),
+
+        # 9 pièges
+        Object(random.randint(50, WIDTH - 50), random.randint(50, HEIGHT - 50), RED, "trap"),
+        Object(random.randint(50, WIDTH - 50), random.randint(50, HEIGHT - 50), RED, "trap"),
+        Object(random.randint(50, WIDTH - 50), random.randint(50, HEIGHT - 50), RED, "trap"),
+        Object(random.randint(50, WIDTH - 50), random.randint(50, HEIGHT - 50), RED, "trap"),
+        Object(random.randint(50, WIDTH - 50), random.randint(50, HEIGHT - 50), RED, "trap"),
+        Object(random.randint(50, WIDTH - 50), random.randint(50, HEIGHT - 50), RED, "trap"),
+        Object(random.randint(50, WIDTH - 50), random.randint(50, HEIGHT - 50), RED, "trap"),
+        Object(random.randint(50, WIDTH - 50), random.randint(50, HEIGHT - 50), RED, "trap"),
+        Object(random.randint(50, WIDTH - 50), random.randint(50, HEIGHT - 50), RED, "trap")
     ]
 
     # Boucle principale
     while running:
         screen.fill(GREY)
+        
+        # Vérifier si le robot est mort
+        if not robot.alive:
+            running = False  # Arrêter la boucle principale si le robot est mort
+
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
@@ -266,7 +270,6 @@ def main():
         clock.tick(60)
 
     pygame.quit()
-
 
 if __name__ == "__main__":
     main()
