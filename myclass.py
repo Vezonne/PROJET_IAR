@@ -3,14 +3,6 @@ import pygame.gfxdraw
 import math
 import random
 
-# Initialisation de Pygame
-pygame.init()
-
-# Configuration de l'écran
-WIDTH, HEIGHT = 720, 720  # Taille de l'écran
-screen = pygame.display.set_mode((WIDTH, HEIGHT))  # Création de l'écran
-pygame.display.set_caption("Simulateur d'Animat")  # Titre de la fenêtre
-
 # Couleurs
 WHITE = (247, 247, 255)
 GREY = (50, 60, 68)
@@ -21,18 +13,6 @@ BLUE = (57, 88, 146)
 # Paramètres du robot
 ROBOT_RADIUS = 10
 ROBOT_SPEED = 1.5
-
-
-def draw_toric_object(screen, obj, width, height):
-    """Dessine un objet avec toricité (répétition aux bords)."""
-    for dx in [-width, 0, width]:
-        for dy in [-height, 0, height]:
-            pygame.draw.circle(
-                screen,
-                obj.color,
-                (int(obj.x + dx) % width, int(obj.y + dy) % height),
-                obj.radius,
-            )
 
 
 # Classes pour les objets de l'environnement
@@ -46,6 +26,17 @@ class Object:
 
     def draw(self, screen):
         pygame.draw.circle(screen, self.color, (self.x, self.y), self.radius)
+
+    def draw_toric_object(self, screen, width, height):
+        """Dessine un objet avec toricité (répétition aux bords)."""
+        for dx in [-width, 0, width]:
+            for dy in [-height, 0, height]:
+                pygame.draw.circle(
+                    screen,
+                    self.color,
+                    (int(self.x + dx) % width, int(self.y + dy) % height),
+                    self.radius,
+                )
 
 
 # Classe du Robot
@@ -66,7 +57,7 @@ class Robot:
             "trap": [0, 0],
         }  # Capteurs gauche et droit
 
-    def update(self):
+    def update(self, width, height):
         # Réduire les niveaux des batteries au fil du temps
         if self.alive:
             self.battery1 -= 0.1  # Dégradation de la batterie 1
@@ -86,8 +77,8 @@ class Robot:
             self.y += move * math.sin(self.angle)
 
             # Appliquer les règles de toricité
-            self.x %= WIDTH  # Revenir de l'autre côté si hors limite
-            self.y %= HEIGHT
+            self.x %= width  # Revenir de l'autre côté si hors limite
+            self.y %= height
 
     def draw(self, screen):
         if not self.alive:
@@ -100,6 +91,8 @@ class Robot:
 
     def draw_sensors(self, screen):
         """Dessine le champ de vision des capteurs."""
+        width = screen.get_width()
+        height = screen.get_height()
         # Définir les champs de vision en radians
         sensor_fov = {
             "left": (-math.pi / 2, 0),  # De -90° à 0°
@@ -113,7 +106,7 @@ class Robot:
         }  # Vert pour gauche, bleu pour droit
 
         # Créer une surface semi-transparente
-        overlay = pygame.Surface((WIDTH, HEIGHT), pygame.SRCALPHA)
+        overlay = pygame.Surface((width, height), pygame.SRCALPHA)
 
         for sensor_name, fov in sensor_fov.items():
             # Calcul des points pour dessiner le secteur
@@ -159,7 +152,7 @@ class Robot:
         self.speed_left = left
         self.speed_right = right
 
-    def check_sensors(self, objects):
+    def check_sensors(self, objects, width, height):
         """Met à jour les distances des capteurs avec un angle de 90° par capteur."""
         # Définir les champs de vision des capteurs
         sensor_fov = {
@@ -184,7 +177,7 @@ class Robot:
 
                         # Calcul de la distance torique
                         distance = self._toric_distance(
-                            self.x, self.y, obj.x, obj.y, WIDTH, HEIGHT
+                            self.x, self.y, obj.x, obj.y, width, height
                         )
                         if distance < closest_distance:
                             closest_distance = distance
@@ -221,136 +214,3 @@ class Robot:
         )  # Distance en X (via bord opposé si plus court)
         dy = min(abs(y2 - y1), height - abs(y2 - y1))  # Distance en Y
         return math.sqrt(dx**2 + dy**2)
-
-
-# Fonction principale
-def main():
-    clock = pygame.time.Clock()
-    running = True
-
-    # Création du robot et des objets dans l'environnement
-    robot = Robot(WIDTH // 2, HEIGHT // 2)
-    objects = [
-        # 3 objets de nourriture
-        Object(
-            random.randint(50, WIDTH - 50),
-            random.randint(50, HEIGHT - 50),
-            GREEN,
-            "food",
-        ),
-        Object(
-            random.randint(50, WIDTH - 50),
-            random.randint(50, HEIGHT - 50),
-            GREEN,
-            "food",
-        ),
-        Object(
-            random.randint(50, WIDTH - 50),
-            random.randint(50, HEIGHT - 50),
-            GREEN,
-            "food",
-        ),
-        # 3 objets d'eau
-        Object(
-            random.randint(50, WIDTH - 50),
-            random.randint(50, HEIGHT - 50),
-            BLUE,
-            "water",
-        ),
-        Object(
-            random.randint(50, WIDTH - 50),
-            random.randint(50, HEIGHT - 50),
-            BLUE,
-            "water",
-        ),
-        Object(
-            random.randint(50, WIDTH - 50),
-            random.randint(50, HEIGHT - 50),
-            BLUE,
-            "water",
-        ),
-        # 9 pièges
-        Object(
-            random.randint(50, WIDTH - 50), random.randint(50, HEIGHT - 50), RED, "trap"
-        ),
-        Object(
-            random.randint(50, WIDTH - 50), random.randint(50, HEIGHT - 50), RED, "trap"
-        ),
-        Object(
-            random.randint(50, WIDTH - 50), random.randint(50, HEIGHT - 50), RED, "trap"
-        ),
-    ]
-
-    # Boucle principale
-    while running:
-        screen.fill(GREY)
-
-        # Vérifier si le robot est mort
-        if not robot.alive:
-            running = False  # Arrêter la boucle principale si le robot est mort
-
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                running = False
-
-        # Réagir aux données des capteurs
-        robot.react_to_sensors()
-
-        # Mise à jour du robot
-        robot.update()
-        robot.check_collision(objects)
-        robot.check_sensors(objects)
-
-        # Dessiner les objets et le robot
-        for obj in objects:
-            draw_toric_object(screen, obj, WIDTH, HEIGHT)
-        robot.draw_sensors(screen)
-        robot.draw(screen)
-
-        # Affichage des batteries
-        font = pygame.font.SysFont(None, 24)
-        battery_text = font.render(
-            f"Batterie1: {robot.battery1:.2f} | Batterie2: {robot.battery2:.2f}",
-            True,
-            WHITE,
-        )
-        screen.blit(battery_text, (10, 10))
-
-        # Affichage des capteurs
-        font = pygame.font.SysFont(None, 18)
-        food_sensor_text = font.render(
-            f"Food: {robot.sensors['food'][0]:.2f} | {robot.sensors['food'][1]:.2f}",
-            True,
-            WHITE,
-        )
-        water_sensor_text = font.render(
-            f"Water: {robot.sensors['water'][0]:.2f} | {robot.sensors['water'][1]:.2f}",
-            True,
-            WHITE,
-        )
-        trap_sensor_text = font.render(
-            f"Trap: {robot.sensors['trap'][0]:.2f} | {robot.sensors['trap'][1]:.2f}",
-            True,
-            WHITE,
-        )
-        screen.blit(food_sensor_text, (10, 30))
-        screen.blit(water_sensor_text, (10, 50))
-        screen.blit(trap_sensor_text, (10, 70))
-
-        # Affichage des caractéristiques du robot
-        font = pygame.font.SysFont(None, 18)
-        robot_text = font.render(
-            f"Vitesse: {robot.speed_left:.2f}, {robot.speed_right:.2} | Angle: {robot.angle:.2f}",
-            True,
-            WHITE,
-        )
-        screen.blit(robot_text, (10, 90))
-
-        pygame.display.flip()
-        clock.tick(60)
-
-    pygame.quit()
-
-
-if __name__ == "__main__":
-    main()
