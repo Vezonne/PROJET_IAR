@@ -46,8 +46,9 @@ class SensorimotorLink:
         self.motor = motor
         self.transfer_function = transfer_function
 
-    def compute_moto_command(self, sensor_value, battery_level):
-        return self.transfer_function(sensor_value, battery_level)
+    def compute_motor_command(self, battery_level):
+        # Utilise la valeur du capteur et le niveau de la batterie pour générer une commande moteur
+        return self.transfer_function(self.sensor.value, battery_level)
 
 class Sensor:
     def __init__(self, sensor_type, position, color, radius):
@@ -58,12 +59,13 @@ class Sensor:
         self.value = 0
 
     def update_value(self, objects):
-        # Logique pour mettre à jour la valeur du capteur en fonction des objets détectés
+        # Mettre à jour la valeur du capteur en fonction des objets détectés
         self.value = 0
         for obj in objects:
-            if obj.type == self.sensor_type:
+            if obj.type == self.sensor_type:  # Vérification du type d'objet
                 distance = ((self.position[0] - obj.x) ** 2 + (self.position[1] - obj.y) ** 2) ** 0.5
                 self.value += max(0, 1 - distance / 100)  # Exemple de calcul de la valeur du capteur
+
 
 class Motor:
     def __init__(self):
@@ -93,7 +95,7 @@ class Robot:
         self.alive = True
         self.sensor_range = 350
 
-        # Initialiser les capteurs
+        # Initialisation des capteurs
         self.sensors = {
             'food_left': Sensor('food', (x - 10, y), (0, 255, 0), 5),
             'food_right': Sensor('food', (x + 10, y), (0, 255, 0), 5),
@@ -103,13 +105,13 @@ class Robot:
             'trap_right': Sensor('trap', (x + 10, y), (255, 0, 0), 5)
         }
 
-        # Initialiser les moteurs
+        # Initialisation des moteurs
         self.motors = {
             'left': Motor(),
             'right': Motor()
         }
 
-        # Initialiser les liens sensorimoteurs
+        # Initialisation des liens sensorimoteurs
         self.links = [
             SensorimotorLink(self.sensors['food_left'], self.motors['left'], self.transfer_function),
             SensorimotorLink(self.sensors['food_right'], self.motors['right'], self.transfer_function),
@@ -120,63 +122,54 @@ class Robot:
         ]
 
     def transfer_function(self, sensor_value, battery_level):
-        # Logique pour transformer les signaux des capteurs en commandes de moteur
+        # Transforme le signal des capteurs en commande moteur ajustée en fonction du niveau de batterie
         return sensor_value * (battery_level / 100)
-    
+
     def evaluate_transfer_function(self, transfer_function):
-        # Logique pour évaluer la performance d'une fonction de transfert
-        # Implémentez votre logique d'évaluation ici
+        # Évalue la performance de la fonction de transfert par un calcul de fitness
         fitness = 0
-        # Exemple de calcul de la fitness
         for _ in range(100):  # Simuler 100 étapes
-            sensor_value = random.uniform(0, 1)  # Valeur de capteur simulée
-            battery_level = random.uniform(0, 100)  # Niveau de batterie simulé
+            sensor_value = random.uniform(0, 1)
+            battery_level = random.uniform(0, 100)
             motor_command = transfer_function(sensor_value, battery_level)
-            fitness += motor_command  # Exemple de calcul de la fitness
+            fitness += motor_command
         return fitness
 
     def optimize_transfer_functions(self):
-        # Utiliser l'algorithme génétique pour optimiser les fonctions de transfert
-        ga = AG.GeneticAlgorithm(population_size=50, mutation_rate=0.1, crossover_rate=0.7, generations=100)
-        ga.evolve()
-        best_transfer_function = max(ga.population, key=self.evaluate_transfer_function)
-        for link in self.links:
-            link.transfer_function = best_transfer_function
+        # Implémenter l'optimisation de la fonction de transfert avec un algorithme génétique
+        pass
 
     def react_to_sensors(self):
-        for link in self.links:
-            sensor_value = link.sensor.value
-            battery_level = (self.battery1 + self.battery2) / 2
-            motor_command = link.compute_motor_command(sensor_value, battery_level)
-            link.motor.update_speed(motor_command)
-        self.set_wheel_speeds(self.motors['left'].speed, self.motors['right'].speed)
+        # Simple réaction selon les capteurs, ajustement de la direction en fonction des valeurs
+        food_left_value = self.sensors['food_left'].value
+        food_right_value = self.sensors['food_right'].value
+        if food_left_value > food_right_value:
+            self.set_wheel_speeds(ROBOT_SPEED * 0.5, ROBOT_SPEED)  # Tourner à gauche
+        elif food_right_value > food_left_value:
+            self.set_wheel_speeds(ROBOT_SPEED, ROBOT_SPEED * 0.5)  # Tourner à droite
+        else:
+            self.set_wheel_speeds(ROBOT_SPEED, ROBOT_SPEED)  # Avancer droit
 
-    def set_wheel_speeds(self, left_speed, right_speed):
-        self.speed_left = left_speed
-        self.speed_right = right_speed
-
-    def update(self, width, height):
-        # Logique pour mettre à jour la position et l'état du robot
-        #self.check_sensors(objects, width, height)  # Met à jour les valeurs des capteurs
-        #self.react_to_sensors() 
-        #self.check_collision(objects, width, height)  # Vérifie les collisions
+    def update(self, width, height, objects):
+        # Met à jour la position et l'état du robot
+        self.check_sensors(objects, width, height)  # Met à jour les valeurs des capteurs
+        self.react_to_sensors()  # Réagit selon les capteurs
+        self.check_collision(objects, width, height)  # Vérifie les collisions
         self.x += (self.speed_left + self.speed_right) / 2 * math.cos(self.angle)
         self.y += (self.speed_left + self.speed_right) / 2 * math.sin(self.angle)
         self.angle += (self.speed_right - self.speed_left) / (2 * ROBOT_RADIUS)
 
-        # Mise à jour des batteries
+        # Consomme de l'énergie
         self.battery1 -= 0.1
         self.battery2 -= 0.1
 
-        # Vérifier les limites du monde torique
-        self.x, self.y = ajuster_coordonnees_toriques(self.x, self.y, width, height)
-
-        # Vérifier si le robot est mort
+        # Vérifie si les batteries sont épuisées
         if self.battery1 <= 0 or self.battery2 <= 0:
             self.alive = False
 
-    # def draw_sensors(self, screen, largeur, hauteur):
-    #     return
+    def set_wheel_speeds(self, left_speed, right_speed):
+        self.speed_left = left_speed
+        self.speed_right = right_speed
     
     def draw_sensors(self, screen):
         """Dessine le champ de vision des capteurs."""
@@ -250,6 +243,8 @@ class Robot:
     def check_sensors(self, objects, width, height):
         for sensor in self.sensors.values():
             sensor.update_value(objects)
+
+
     def react_to_sensors(self):
         """Réagir en fonction des données des capteurs."""
 

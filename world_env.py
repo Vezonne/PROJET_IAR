@@ -73,7 +73,7 @@ def main():
         robot.react_to_sensors()
 
         # Mise à jour du robot
-        robot.update(WIDTH, HEIGHT)
+        robot.update(WIDTH, HEIGHT,objects)
         robot.check_collision(objects, WIDTH, HEIGHT)
         robot.check_sensors(objects, WIDTH, HEIGHT)
 

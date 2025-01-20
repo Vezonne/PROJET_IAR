@@ -27,7 +27,7 @@ class GeneticAlgorithm:
         fitness = 0
         for _ in range(100):  # Simuler un certain nombre d'étapes
             robot.react_to_sensors()
-            robot.update(WIDTH, HEIGHT)
+            robot.update(WIDTH, HEIGHT, robot.sensor_objects)
             # Mesurez la performance, par exemple, en fonction de la durée de vie et des batteries
             fitness += (robot.battery1 + robot.battery2) / 2
             if not robot.alive:
