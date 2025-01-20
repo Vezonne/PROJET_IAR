@@ -90,19 +90,19 @@ class Robot:
         self.angle = 0
         self.speed_left = 0
         self.speed_right = 0
-        self.battery1 = 200
-        self.battery2 = 200
+        self.battery1 = 100
+        self.battery2 = 100
         self.alive = True
         self.sensor_range = 350
 
         # Initialisation des capteurs
         self.sensors = {
-            'food_left': Sensor('food', (x - 10, y), (0, 255, 0), 5),
-            'food_right': Sensor('food', (x + 10, y), (0, 255, 0), 5),
-            'water_left': Sensor('water', (x - 10, y), (0, 0, 255), 5),
-            'water_right': Sensor('water', (x + 10, y), (0, 0, 255), 5),
-            'trap_left': Sensor('trap', (x - 10, y), (255, 0, 0), 5),
-            'trap_right': Sensor('trap', (x + 10, y), (255, 0, 0), 5)
+            'food_left': Sensor('food', (x - 10, y), (0, 255, 0), 350),
+            'food_right': Sensor('food', (x + 10, y), (0, 255, 0), 350),
+            'water_left': Sensor('water', (x - 10, y), (0, 0, 255), 350),
+            'water_right': Sensor('water', (x + 10, y), (0, 0, 255), 350),
+            'trap_left': Sensor('trap', (x - 10, y), (255, 0, 0), 350),
+            'trap_right': Sensor('trap', (x + 10, y), (255, 0, 0), 350)
         }
 
         # Initialisation des moteurs
@@ -223,8 +223,9 @@ class Robot:
         pygame.draw.circle(screen, (255, 0, 0), (int(self.x) + 10, int(self.y) + 5), 3)    
 
     def move_object_randomly(self, obj, width, height):
-        obj.x = random.randint(0, width)
-        obj.y = random.randint(0, height)
+        # Appliquer la toricité lors du déplacement de l'objet
+        obj.x, obj.y = ajuster_coordonnees_toriques(obj.x, obj.y, width, height)
+
 
     def check_collision(self, objects, width, height):
         """Vérifie les collisions avec les objets en utilisant une distance torique."""

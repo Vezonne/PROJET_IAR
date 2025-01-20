@@ -17,7 +17,7 @@ class GeneticAlgorithm:
         # Génère un individu avec des paramètres aléatoires pour les liens
         return [random.uniform(-1, 1) for _ in range(10)]  # Exemple de 10 paramètres
 
-    def evaluate_fitness(self, individual, Robot, WIDTH, HEIGHT):
+    def evaluate_fitness(self, individual, Robot, WIDTH, HEIGHT,objects):
     # Simuler le robot avec ces paramètres et calculer sa fitness
         robot = Robot(WIDTH // 2, HEIGHT // 2)  # Créez une instance de robot
         for i, link in enumerate(robot.links):
@@ -27,7 +27,7 @@ class GeneticAlgorithm:
         fitness = 0
         for _ in range(100):  # Simuler un certain nombre d'étapes
             robot.react_to_sensors()
-            robot.update(WIDTH, HEIGHT, robot.sensor_objects)
+            robot.update(WIDTH, HEIGHT, objects)
             # Mesurez la performance, par exemple, en fonction de la durée de vie et des batteries
             fitness += (robot.battery1 + robot.battery2) / 2
             if not robot.alive:

@@ -3,7 +3,7 @@ import pygame.gfxdraw
 import math
 import random
 
-import myclass
+import myclass as myclass
 import AlgoGenetique as AG
 from myclass import Object, Robot
 
@@ -17,6 +17,7 @@ BLUE = (57, 88, 146)
 # Taille de l'écran
 WIDTH, HEIGHT = 720, 720
 
+
 def main():
     pygame.init()
 
@@ -25,18 +26,6 @@ def main():
     pygame.display.set_caption("Simulateur d'Animat")  # Titre de la fenêtre
 
     clock = pygame.time.Clock()
-
-    ga = AG.GeneticAlgorithm(population_size=50, mutation_rate=0.1, crossover_rate=0.7, generations=100)
-    ga.evolve()
-    running = True
-
-    # Création du robot et des objets dans l'environnement
-    best_individual = max(ga.population, key=lambda ind: ga.evaluate_fitness(ind, myclass.Robot, WIDTH, HEIGHT))
-    robot = Robot(WIDTH // 2, HEIGHT // 2)
-    for i, link in enumerate(robot.links):
-        link.transfer_function = ga.create_transfer_function(best_individual[i])
-
-
     trap_positions = [
         (100, 100), (200, 200), (300, 300), (400, 400), (500, 500), (600, 600)
     ]
@@ -57,6 +46,19 @@ def main():
     ]
     water_objects = [Object(water_positions[i][0][0], water_positions[i][0][1], BLUE, "water", positions=water_positions[i]) for i in range(3)]
     objects = traps + food_objects + water_objects
+
+    ga = AG.GeneticAlgorithm(population_size=50, mutation_rate=0.1, crossover_rate=0.7, generations=100)
+    ga.evolve()
+    running = True
+
+    # Création du robot et des objets dans l'environnement
+    best_individual = max(ga.population, key=lambda ind: ga.evaluate_fitness(ind, myclass.Robot, WIDTH, HEIGHT,objects))
+    robot = Robot(WIDTH // 2, HEIGHT // 2)
+    for i, link in enumerate(robot.links):
+        link.transfer_function = ga.create_transfer_function(best_individual[i])
+
+
+    
     # Boucle principale
     while running:
         screen.fill(GREY)
@@ -73,6 +75,11 @@ def main():
         robot.react_to_sensors()
 
         # Mise à jour du robot
+        robot.x, robot.y = myclass.ajuster_coordonnees_toriques(
+            robot.x + (robot.speed_left + robot.speed_right) / 2 * math.cos(robot.angle),
+            robot.y + (robot.speed_left + robot.speed_right) / 2 * math.sin(robot.angle),
+            WIDTH, HEIGHT
+            )
         robot.update(WIDTH, HEIGHT,objects)
         robot.check_collision(objects, WIDTH, HEIGHT)
         robot.check_sensors(objects, WIDTH, HEIGHT)
