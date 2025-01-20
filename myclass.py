@@ -18,12 +18,14 @@ ROBOT_SPEED = 1.5
 
 # Classes pour les objets de l'environnement
 class Object:
-    def __init__(self, x, y, color, obj_type):
+    def __init__(self, x, y, color, obj_type,positions=None):
         self.x = x
         self.y = y
         self.color = color
         self.type = obj_type  # "food", "water" ou "trap"
         self.radius = 16
+        self.positions = positions or []  # Liste des positions, ou vide si non fournie
+        self.current_position_index = 0
 
     def draw(self, screen):
         pygame.draw.circle(screen, self.color, (self.x, self.y), self.radius)
@@ -86,8 +88,8 @@ class Robot:
         self.angle = 0
         self.speed_left = 0
         self.speed_right = 0
-        self.battery1 = 100
-        self.battery2 = 100
+        self.battery1 = 200
+        self.battery2 = 200
         self.alive = True
         self.sensor_range = 350
 
@@ -155,13 +157,16 @@ class Robot:
 
     def update(self, width, height):
         # Logique pour mettre à jour la position et l'état du robot
+        #self.check_sensors(objects, width, height)  # Met à jour les valeurs des capteurs
+        #self.react_to_sensors() 
+        #self.check_collision(objects, width, height)  # Vérifie les collisions
         self.x += (self.speed_left + self.speed_right) / 2 * math.cos(self.angle)
         self.y += (self.speed_left + self.speed_right) / 2 * math.sin(self.angle)
         self.angle += (self.speed_right - self.speed_left) / (2 * ROBOT_RADIUS)
 
         # Mise à jour des batteries
-        self.battery1 -= 0.01
-        self.battery2 -= 0.01
+        self.battery1 -= 0.1
+        self.battery2 -= 0.1
 
         # Vérifier les limites du monde torique
         self.x, self.y = ajuster_coordonnees_toriques(self.x, self.y, width, height)
@@ -222,17 +227,23 @@ class Robot:
         # Roue droite
         pygame.draw.ellipse(screen, (0, 0, 0), (int(self.x) - 10, int(self.y) + 10, 20, 5)) 
         pygame.draw.circle(screen, (255, 0, 0), (int(self.x) + 10, int(self.y) - 5), 3)
-        pygame.draw.circle(screen, (255, 0, 0), (int(self.x) + 10, int(self.y) + 5), 3)       
+        pygame.draw.circle(screen, (255, 0, 0), (int(self.x) + 10, int(self.y) + 5), 3)    
 
-    def check_collision(self, objects):
-        # Logique pour vérifier les collisions avec les objets
+    def move_object_randomly(self, obj, width, height):
+        obj.x = random.randint(0, width)
+        obj.y = random.randint(0, height)
+
+    def check_collision(self, objects, width, height):
+        """Vérifie les collisions avec les objets en utilisant une distance torique."""
         for obj in objects:
-            distance = ((self.x - obj.x) ** 2 + (self.y - obj.y) ** 2) ** 0.5
-            if distance < 10:
+            distance = self._toric_distance(self.x, self.y, obj.x, obj.y, width, height)
+            if distance < (ROBOT_RADIUS + obj.radius):
                 if obj.type == 'food':
                     self.battery1 = min(100, self.battery1 + 20)
+                    self.move_object_randomly(obj, width, height)
                 elif obj.type == 'water':
                     self.battery2 = min(100, self.battery2 + 20)
+                    self.move_object_randomly(obj, width, height)
                 elif obj.type == 'trap':
                     self.alive = False
 

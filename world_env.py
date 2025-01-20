@@ -35,57 +35,28 @@ def main():
     robot = Robot(WIDTH // 2, HEIGHT // 2)
     for i, link in enumerate(robot.links):
         link.transfer_function = ga.create_transfer_function(best_individual[i])
-    objects = [
-        # 3 objets de nourriture
-        Object(
-            random.randint(50, WIDTH - 50),
-            random.randint(50, HEIGHT - 50),
-            GREEN,
-            "food",
-        ),
-        Object(
-            random.randint(50, WIDTH - 50),
-            random.randint(50, HEIGHT - 50),
-            GREEN,
-            "food",
-        ),
-        Object(
-            random.randint(50, WIDTH - 50),
-            random.randint(50, HEIGHT - 50),
-            GREEN,
-            "food",
-        ),
-        # 3 objets d'eau
-        Object(
-            random.randint(50, WIDTH - 50),
-            random.randint(50, HEIGHT - 50),
-            BLUE,
-            "water",
-        ),
-        Object(
-            random.randint(50, WIDTH - 50),
-            random.randint(50, HEIGHT - 50),
-            BLUE,
-            "water",
-        ),
-        Object(
-            random.randint(50, WIDTH - 50),
-            random.randint(50, HEIGHT - 50),
-            BLUE,
-            "water",
-        ),
-        # 9 pièges
-        Object(
-            random.randint(50, WIDTH - 50), random.randint(50, HEIGHT - 50), RED, "trap"
-        ),
-        Object(
-            random.randint(50, WIDTH - 50), random.randint(50, HEIGHT - 50), RED, "trap"
-        ),
-        Object(
-            random.randint(50, WIDTH - 50), random.randint(50, HEIGHT - 50), RED, "trap"
-        ),
-    ]
 
+
+    trap_positions = [
+        (100, 100), (200, 200), (300, 300), (400, 400), (500, 500), (600, 600)
+    ]
+    traps = [Object(trap_positions[i][0], trap_positions[i][1], RED, "trap") for i in range(6)]  # 6 pièges
+    # Liste de positions pour la nourriture (chaque objet a 6 positions)
+    food_positions = [
+        [(400, 360), (100, 360), (200, 360), (250, 300), (300, 350), (350, 400)],  # Positions pour le premier objet de nourriture
+        [(50, 100), (100, 150), (150, 200), (200, 250), (250, 300), (300, 350)],  # Positions pour le deuxième objet de nourriture
+        [(75, 125), (125, 175), (175, 225), (225, 275), (275, 325), (325, 375)]   # Positions pour le troisième objet de nourriture
+    ]
+    food_objects = [Object(food_positions[i][0][0], food_positions[i][0][1], GREEN, "food", positions=food_positions[i]) for i in range(3)]
+
+    # Liste de positions pour l'eau (3 objets)
+    water_positions = [
+        [(150, 100), (200, 150), (250, 200), (300, 250), (350, 300), (400, 350)],  # Positions pour le premier objet d'eau
+        [(100, 50), (150, 100), (200, 150), (250, 200), (300, 250), (350, 300)],  # Positions pour le deuxième objet d'eau
+        [(125, 75), (175, 125), (225, 175), (275, 225), (325, 275), (375, 325)]   # Positions pour le troisième objet d'eau
+    ]
+    water_objects = [Object(water_positions[i][0][0], water_positions[i][0][1], BLUE, "water", positions=water_positions[i]) for i in range(3)]
+    objects = traps + food_objects + water_objects
     # Boucle principale
     while running:
         screen.fill(GREY)
@@ -103,7 +74,7 @@ def main():
 
         # Mise à jour du robot
         robot.update(WIDTH, HEIGHT)
-        robot.check_collision(objects)
+        robot.check_collision(objects, WIDTH, HEIGHT)
         robot.check_sensors(objects, WIDTH, HEIGHT)
 
         # Dessiner les objets et le robot
@@ -149,7 +120,14 @@ def main():
             True,
             WHITE,
         )
+
+        position_text = font.render(
+            f"Position: ({robot.x:.2f}, {robot.y:.2f})",
+            True,
+            WHITE,
+        )
         screen.blit(robot_text, (10, 90))
+        screen.blit(position_text, (10, 110))
 
         pygame.display.flip()
         clock.tick(60)
