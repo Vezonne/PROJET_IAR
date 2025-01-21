@@ -27,41 +27,114 @@ def main():
 
     clock = pygame.time.Clock()
     trap_positions = [
-        (100, 100), (200, 200), (300, 300), (400, 400), (500, 500), (600, 600)
+        (100, 100),
+        (200, 200),
+        (300, 300),
+        (400, 400),
+        (500, 500),
+        (600, 600),
     ]
-    traps = [Object(trap_positions[i][0], trap_positions[i][1], RED, "trap") for i in range(6)]  # 6 pièges
+    traps = [
+        Object(trap_positions[i][0], trap_positions[i][1], RED, "trap")
+        for i in range(6)
+    ]  # 6 pièges
     # Liste de positions pour la nourriture (chaque objet a 6 positions)
     food_positions = [
-        [(400, 360), (100, 360), (200, 360), (250, 300), (300, 350), (350, 400)],  # Positions pour le premier objet de nourriture
-        [(50, 100), (100, 150), (150, 200), (200, 250), (250, 300), (300, 350)],  # Positions pour le deuxième objet de nourriture
-        [(75, 125), (125, 175), (175, 225), (225, 275), (275, 325), (325, 375)]   # Positions pour le troisième objet de nourriture
+        [
+            (400, 360),
+            (100, 360),
+            (200, 360),
+            (250, 300),
+            (300, 350),
+            (350, 400),
+        ],  # Positions pour le premier objet de nourriture
+        [
+            (50, 100),
+            (100, 150),
+            (150, 200),
+            (200, 250),
+            (250, 300),
+            (300, 350),
+        ],  # Positions pour le deuxième objet de nourriture
+        [
+            (75, 125),
+            (125, 175),
+            (175, 225),
+            (225, 275),
+            (275, 325),
+            (325, 375),
+        ],  # Positions pour le troisième objet de nourriture
     ]
-    food_objects = [Object(food_positions[i][0][0], food_positions[i][0][1], GREEN, "food", positions=food_positions[i]) for i in range(3)]
+    food_objects = [
+        Object(
+            food_positions[i][0][0],
+            food_positions[i][0][1],
+            GREEN,
+            "food",
+            positions=food_positions[i],
+        )
+        for i in range(3)
+    ]
 
     # Liste de positions pour l'eau (3 objets)
     water_positions = [
-        [(150, 100), (200, 150), (250, 200), (300, 250), (350, 300), (400, 350)],  # Positions pour le premier objet d'eau
-        [(100, 50), (150, 100), (200, 150), (250, 200), (300, 250), (350, 300)],  # Positions pour le deuxième objet d'eau
-        [(125, 75), (175, 125), (225, 175), (275, 225), (325, 275), (375, 325)]   # Positions pour le troisième objet d'eau
+        [
+            (150, 100),
+            (200, 150),
+            (250, 200),
+            (300, 250),
+            (350, 300),
+            (400, 350),
+        ],  # Positions pour le premier objet d'eau
+        [
+            (100, 50),
+            (150, 100),
+            (200, 150),
+            (250, 200),
+            (300, 250),
+            (350, 300),
+        ],  # Positions pour le deuxième objet d'eau
+        [
+            (125, 75),
+            (175, 125),
+            (225, 175),
+            (275, 225),
+            (325, 275),
+            (375, 325),
+        ],  # Positions pour le troisième objet d'eau
     ]
-    water_objects = [Object(water_positions[i][0][0], water_positions[i][0][1], BLUE, "water", positions=water_positions[i]) for i in range(3)]
+    water_objects = [
+        Object(
+            water_positions[i][0][0],
+            water_positions[i][0][1],
+            BLUE,
+            "water",
+            positions=water_positions[i],
+        )
+        for i in range(3)
+    ]
     objects = traps + food_objects + water_objects
 
-    ga = AG.GeneticAlgorithm(population_size=50, mutation_rate=0.1, crossover_rate=0.7, generations=100)
+    ga = AG.GeneticAlgorithm(
+        population_size=50, mutation_rate=0.1, crossover_rate=0.7, generations=100
+    )
     ga.evolve()
     running = True
 
     # Création du robot et des objets dans l'environnement
-    best_individual = max(ga.population, key=lambda ind: ga.evaluate_fitness(ind, myclass.Robot, WIDTH, HEIGHT,objects))
+    best_individual = max(
+        ga.population,
+        key=lambda ind: ga.evaluate_fitness(ind, myclass.Robot, WIDTH, HEIGHT, objects),
+    )
     robot = Robot(WIDTH // 2, HEIGHT // 2)
+    robot.set_sensors_screen(screen, True)
     for i, link in enumerate(robot.links):
         link.transfer_function = ga.create_transfer_function(best_individual[i])
 
-
-    
     # Boucle principale
     while running:
         screen.fill(GREY)
+        clock.tick(60)
 
         # Vérifier si le robot est mort
         if not robot.alive:
@@ -76,18 +149,19 @@ def main():
 
         # Mise à jour du robot
         robot.x, robot.y = myclass.ajuster_coordonnees_toriques(
-            robot.x + (robot.speed_left + robot.speed_right) / 2 * math.cos(robot.angle),
-            robot.y + (robot.speed_left + robot.speed_right) / 2 * math.sin(robot.angle),
-            WIDTH, HEIGHT
-            )
-        robot.update(WIDTH, HEIGHT,objects)
+            robot.x
+            + (robot.speed_left + robot.speed_right) / 2 * math.cos(robot.angle),
+            robot.y
+            + (robot.speed_left + robot.speed_right) / 2 * math.sin(robot.angle),
+            WIDTH,
+            HEIGHT,
+        )
+        robot.update(WIDTH, HEIGHT, objects)
         robot.check_collision(objects, WIDTH, HEIGHT)
-        robot.check_sensors(objects, WIDTH, HEIGHT)
 
         # Dessiner les objets et le robot
         for obj in objects:
             obj.draw_toric_object(screen, WIDTH, HEIGHT)
-        robot.draw_sensors(screen)
         robot.draw(screen)
 
         # Affichage des batteries
@@ -133,8 +207,24 @@ def main():
             True,
             WHITE,
         )
+        left_angle = math.degrees(robot.sensors["food_left"].angle)
+        left_rad = math.degrees(
+            robot.sensors["food_left"].rad + robot.sensors["food_left"].angle
+        )
+
+        right_angle = math.degrees(robot.sensors["food_right"].angle)
+        right_rad = math.degrees(
+            robot.sensors["food_right"].rad + robot.sensors["food_right"].angle
+        )
+
+        sensor_angle_text = font.render(
+            f"Sensor Angle: {left_angle}, {left_rad}; {right_rad}, {right_angle}",
+            True,
+            WHITE,
+        )
         screen.blit(robot_text, (10, 90))
         screen.blit(position_text, (10, 110))
+        screen.blit(sensor_angle_text, (10, 130))
 
         pygame.display.flip()
         clock.tick(60)
