@@ -65,7 +65,6 @@ class Sensor:
         self.value = 0
         self.screen = None
         self.draw_sensror = False
-        self.act_obj = (x, y)
 
     def update(self, x, y, angle, objects):
         self.x = x
@@ -78,6 +77,9 @@ class Sensor:
     def update_value(self, objects):
         # Mettre à jour la valeur du capteur en fonction des objets détectés
         self.value = 0
+        sens_obj_x = self.x
+        sens_obj_y = self.y
+
         # print("SENSOR objects: " + str(objects))
         for obj in objects:
             if obj.type == self.sensor_type:  # Vérification du type d'objet
@@ -98,15 +100,19 @@ class Sensor:
 
                 if start_angle <= obj_angle <= end_angle:
                     self.value = max(self.value, (1 - distance / self.range) * 100)
-                    if self.draw_sensror:
-                        if self.value == (1 - distance / self.range) * 100:
-                            pygame.draw.line(
-                                self.screen,
-                                self.color,
-                                (self.x, self.y),
-                                (obj.x, obj.y),
-                                1,
-                            )
+                    if self.value == (1 - distance / self.range) * 100:
+                        sens_obj_x = obj.x
+                        sens_obj_y = obj.y
+
+        if self.draw_sensror:
+            if self.x != sens_obj_x or self.y != sens_obj_y:
+                pygame.draw.line(
+                    self.screen,
+                    self.color,
+                    (self.x, self.y),
+                    (sens_obj_x, sens_obj_y),
+                    1,
+                )
 
     def set_screen(self, screen, draw_sensror=False):
         self.screen = screen
