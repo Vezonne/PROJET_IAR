@@ -26,6 +26,7 @@ def main():
     pygame.display.set_caption("Simulateur d'Animat")  # Titre de la fenêtre
 
     clock = pygame.time.Clock()
+    
     trap_positions = [
         (100, 100),
         (200, 200),
@@ -115,10 +116,8 @@ def main():
     ]
     objects = traps + food_objects + water_objects
 
-    ga = AG.GeneticAlgorithm(
-        population_size=50, mutation_rate=0.1, crossover_rate=0.7, generations=100
-    )
-    ga.evolve()
+    ga = AG.GeneticAlgorithm(generations=50)
+    ga.evolve(Robot, WIDTH, HEIGHT, objects)
     running = True
 
     # Création du robot et des objets dans l'environnement
