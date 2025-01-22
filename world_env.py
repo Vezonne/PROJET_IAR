@@ -26,7 +26,7 @@ def visual_execution(objects, param=None):
 
     clock = pygame.time.Clock()
 
-    robot = Robot(WIDTH // 2, HEIGHT // 2)
+    robot = Robot(WIDTH - 5, HEIGHT // 2, WIDTH, HEIGHT)
     if param is not None:
         robot.set_all_param(param)
     robot.set_sensors_screen(screen, True)
@@ -36,7 +36,7 @@ def visual_execution(objects, param=None):
     # Boucle principale
     while running:
         screen.fill(GREY)
-        clock.tick(60)
+        clock.tick(10)
 
         # Vérifier si le robot est mort
         if not robot.alive:
@@ -118,20 +118,31 @@ def visual_execution(objects, param=None):
         right_rad = math.degrees(
             robot.sensors["food_right"].rad + robot.sensors["food_right"].angle
         )
-
-        sensor_angle_text = font.render(
-            f"Sensor Angle: {left_angle}, {left_rad}; {right_rad}, {right_angle}",
-            True,
-            WHITE,
-        )
         screen.blit(robot_text, (10, 90))
         screen.blit(position_text, (10, 110))
-        screen.blit(sensor_angle_text, (10, 130))
 
         pygame.display.flip()
-        clock.tick(60)
+        running = ask_to_continue()
 
     pygame.quit()
+
+
+def ask_to_continue():
+    """
+    Demande à l'utilisateur s'il souhaite continuer.
+    """
+    while True:
+        response = (
+            input("Lancer l'execution visuel du meilleur individu ? (o/n) : ")
+            .strip()
+            .lower()
+        )
+        if response in ["o", "oui"]:
+            return True
+        elif response in ["n", "non"]:
+            return False
+        else:
+            print("Veuillez répondre par 'o' pour oui ou 'n' pour non.")
 
 
 def genetic_execution(num_generations, objects):
@@ -140,8 +151,11 @@ def genetic_execution(num_generations, objects):
         generations=num_generations,
     )
     best_individual = ga.evolve(WIDTH, HEIGHT, objects)
+    print("Meilleur individu trouvé :", best_individual)
 
-    visual_execution(objects, best_individual)
+    if ask_to_continue():
+
+        visual_execution(objects, best_individual)
 
 
 def main():
@@ -236,8 +250,10 @@ def main():
     ]
     objects = traps + food_objects + water_objects
 
-    # visual_execution(objects)
-    genetic_execution(num_generations=5, objects=objects)
+    # param_1 = [99 for _ in range(83)]
+
+    visual_execution(objects=objects)
+    # genetic_execution(num_generations=5, objects=objects)
 
 
 if __name__ == "__main__":

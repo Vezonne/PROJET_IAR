@@ -1,6 +1,6 @@
 import random
-import math
 import numpy as np
+from tqdm import tqdm
 
 from myclass import *
 
@@ -36,8 +36,8 @@ class GeneticAlgorithm:
         robot = Robot(WIDTH // 2, HEIGHT // 2)
         robot.set_all_param(param)
 
-        running = True
-        while running:
+        max_time = 10_000
+        for i in range(max_time):
             # Vérifier si le robot est mort
             if not robot.alive:
                 running = False  # Arrêter la boucle principale si le robot est mort
@@ -65,13 +65,27 @@ class GeneticAlgorithm:
 
     def mutate(self, individual):
         # Modifie légèrement les paramètres d'un individu
-        for i in range(len(individual)):
-            if random.random() < self.mutation_rate:
-                individual[i] += random.uniform(-0.1, 0.1)
-        return individual
+        mutated_list = []
+        for param in individual:
+
+            binary = format(int(param), "b").zfill(7)
+
+            mutated_binary = "".join(
+                bit if random.random() > self.mutation_rate else str(1 - int(bit))
+                for bit in binary
+            )
+
+            mutated_param = int(mutated_binary, 2)
+
+            if mutated_param > 99:
+                mutated_param = 99
+
+            mutated_list.append(mutated_param)
+
+        return mutated_list
 
     def select_parents(self, fitnesses):
-        fitnesses_tot = sum(fitnesses)
+        fitnesses_tot = np.sum(fitnesses)
         prob = []
         for f in fitnesses:
             prob.append(f / fitnesses_tot)
@@ -83,7 +97,9 @@ class GeneticAlgorithm:
             new_population = []
             fitnesses = [
                 self.evaluate_fitness(ind, WIDTH, HEIGHT, objects)
-                for ind in self.population
+                for ind in tqdm(
+                    self.population, desc=f"Generation {generation + 1} progress"
+                )
             ]
             for _ in range(self.population_size):
                 parent1, parent2 = self.select_parents(fitnesses)
@@ -93,7 +109,9 @@ class GeneticAlgorithm:
             self.population = new_population
 
             # Affichage de la génération actuelle
-            print(f"Generation {generation + 1}/{self.generations} completed.")
+            print(
+                f"Generation {generation + 1}/{self.generations} completed. Fitness Average: {np.mean(fitnesses):.2f} Fitness Min: {np.min(fitnesses):.2f} Fitness Max: {np.max(fitnesses):.2f}"
+            )
         best_individual = max(
             self.population,
             key=lambda ind: self.evaluate_fitness(ind, WIDTH, HEIGHT, objects),

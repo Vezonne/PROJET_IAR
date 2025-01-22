@@ -122,7 +122,7 @@ class SensorimotorLink:
 
 
 class Sensor:
-    def __init__(self, sensor_type, x, y, color, range, rad):
+    def __init__(self, sensor_type, x, y, color, range, rad, width, height):
         self.sensor_type = sensor_type
         self.x = x
         self.y = y
@@ -130,6 +130,8 @@ class Sensor:
         self.color = color
         self.range = range
         self.rad = rad
+        self.width = width
+        self.height = height
         self.value = 0
         self.screen = None
         self.draw_sensor = False
@@ -145,40 +147,69 @@ class Sensor:
     def update_value(self, objects):
         # Mettre à jour la valeur du capteur en fonction des objets détectés
         self.value = 0
-        sens_obj_x = self.x
-        sens_obj_y = self.y
+        x_obj = self.x
+        y_obj = self.y
+        x_to_obj = self.x
+        y_to_obj = self.y
+        x_from_obj = self.x
+        y_from_obj = self.y
 
-        # print("SENSOR objects: " + str(objects))
         for obj in objects:
-            if obj.type == self.sensor_type:  # Vérification du type d'objet
-                dx = obj.x - self.x
-                dy = obj.y - self.y
-                distance = math.sqrt(dx**2 + dy**2)
-                if distance > self.range:
-                    continue
+            if obj.type == self.sensor_type:
+                tor_pos = []
+                for i in range(-1, 2):
+                    for j in range(-1, 2):
+                        tor_pos.append(
+                            (obj.x + i * self.width, obj.y + j * self.height)
+                        )
+                print("objects: ", obj.type)
+                print("obj pos: ", (obj.x, obj.y))
+                print("tor_pos: ", tor_pos)
+                for obj_x, obj_y in tor_pos:
+                    dx = obj_x - self.x
+                    dy = obj_y - self.y
 
-                # Calcul de l'angle entre le capteur et l'objet
-                obj_angle = math.atan2(dy, dx)
-                start_angle = min(self.angle, self.angle + self.rad)
-                end_angle = max(self.angle, self.angle + self.rad)
+                    distance = math.sqrt(dx**2 + dy**2)
+                    print("pos: ", (obj_x, obj_y))
+                    print("\tdx, dy: ", (dx, dy))
+                    print("\tdistance: ", distance)
+                    if distance > self.range:
+                        continue
 
-                # print("obj_angle: " + str(obj_angle))
-                # print("start_angle: " + str(start_angle))
-                # print("end_angle: " + str(end_angle))
+                    obj_angle = math.atan2(dy, dx)
+                    start_angle = min(self.angle, self.angle + self.rad)
+                    end_angle = max(self.angle, self.angle + self.rad)
 
-                if start_angle <= obj_angle <= end_angle:
-                    self.value = max(self.value, (1 - distance / self.range) * 100)
-                    if self.value == (1 - distance / self.range) * 100:
-                        sens_obj_x = obj.x
-                        sens_obj_y = obj.y
+                    print("\tangle: ", obj_angle)
+                    print("\tvalue: ", (1 - distance / self.range) * 100)
+
+                    if start_angle <= obj_angle <= end_angle:
+                        self.value = max(self.value, (1 - distance / self.range) * 100)
+                        if self.value == (1 - distance / self.range) * 100:
+                            x_obj = obj.x
+                            y_obj = obj.y
+                            x_to_obj = self.x + dx
+                            y_to_obj = self.y + dy
+                            x_from_obj = obj.x - dx
+                            y_from_obj = obj.y - dy
+
+                    print("Value: ", self.value)
+                    print()
 
         if self.draw_sensor:
-            if self.x != sens_obj_x or self.y != sens_obj_y:
+            if self.x != x_to_obj or self.y != y_to_obj:
                 pygame.draw.line(
                     self.screen,
                     self.color,
                     (self.x, self.y),
-                    (sens_obj_x, sens_obj_y),
+                    (x_to_obj, y_to_obj),
+                    1,
+                )
+                pygame.draw.line(
+                    self.screen,
+                    self.color,
+                    (x_obj, y_obj),
+                    (x_from_obj, y_from_obj),
                     1,
                 )
 
@@ -232,9 +263,11 @@ def ajuster_coordonnees_toriques(x, y, largeur, hauteur):
 
 
 class Robot:
-    def __init__(self, x, y):
+    def __init__(self, x, y, width, height):
         self.x = x
         self.y = y
+        self.width = width
+        self.height = height
         self.angle = 0
         self.speed_left = 0
         self.speed_right = 0
@@ -250,12 +283,66 @@ class Robot:
 
         # Initialisation des capteurs
         self.sensors = {
-            "food_left": Sensor("food", x, y, GREEN, self.sensor_range, left_rad),
-            "food_right": Sensor("food", x, y, BLUE, self.sensor_range, right_rad),
-            "water_left": Sensor("water", x, y, GREEN, self.sensor_range, left_rad),
-            "water_right": Sensor("water", x, y, BLUE, self.sensor_range, right_rad),
-            "trap_left": Sensor("trap", x, y, GREEN, self.sensor_range, left_rad),
-            "trap_right": Sensor("trap", x, y, BLUE, self.sensor_range, right_rad),
+            "food_left": Sensor(
+                "food",
+                x,
+                y,
+                GREEN,
+                self.sensor_range,
+                left_rad,
+                self.width,
+                self.height,
+            ),
+            "food_right": Sensor(
+                "food",
+                x,
+                y,
+                BLUE,
+                self.sensor_range,
+                right_rad,
+                self.width,
+                self.height,
+            ),
+            "water_left": Sensor(
+                "water",
+                x,
+                y,
+                GREEN,
+                self.sensor_range,
+                left_rad,
+                self.width,
+                self.height,
+            ),
+            "water_right": Sensor(
+                "water",
+                x,
+                y,
+                BLUE,
+                self.sensor_range,
+                right_rad,
+                self.width,
+                self.height,
+            ),
+            "trap_left": Sensor(
+                "trap",
+                x,
+                y,
+                GREEN,
+                self.sensor_range,
+                left_rad,
+                self.width,
+                self.height,
+            ),
+            "trap_right": Sensor(
+                "trap",
+                x,
+                y,
+                BLUE,
+                self.sensor_range,
+                right_rad,
+                self.width,
+                self.height,
+            ),
         }
 
         # Initialisation des liens sensorimoteurs
@@ -338,12 +425,12 @@ class Robot:
 
         # Consomme de l'énergie
         if self.battery1 > 0:
-            self.battery1 -= 0.1
+            self.battery1 -= 1
         else:
             self.battery1 = 0
 
         if self.battery2 > 0:
-            self.battery2 -= 0.1
+            self.battery2 -= 1
         else:
             self.battery2 = 0
 
