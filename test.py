@@ -18,7 +18,7 @@ BLUE = (57, 88, 146)
 WIDTH, HEIGHT = 720, 720
 
 
-def visual_execution(objects, param=None):
+def visual_execution(objects):
     pygame.init()
 
     screen = pygame.display.set_mode((WIDTH, HEIGHT))  # Création de l'écran
@@ -27,8 +27,6 @@ def visual_execution(objects, param=None):
     clock = pygame.time.Clock()
 
     robot = Robot(WIDTH // 2, HEIGHT // 2)
-    if param is not None:
-        robot.set_all_param(param)
     robot.set_sensors_screen(screen, True)
 
     running = True
@@ -38,18 +36,15 @@ def visual_execution(objects, param=None):
         screen.fill(GREY)
         clock.tick(60)
 
-        # Vérifier si le robot est mort
         if not robot.alive:
-            running = False  # Arrêter la boucle principale si le robot est mort
+            running = False
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
 
-        # Réagir aux données des capteurs
         robot.react_to_sensors()
 
-        # Mise à jour du robot
         robot.x, robot.y = myclass.ajuster_coordonnees_toriques(
             robot.x
             + (robot.speed_left + robot.speed_right) / 2 * math.cos(robot.angle),
@@ -134,24 +129,14 @@ def visual_execution(objects, param=None):
     pygame.quit()
 
 
-def genetic_execution(num_generations, objects):
-
-    ga = AG.GeneticAlgorithm(
-        generations=num_generations,
-    )
-    best_individual = ga.evolve(WIDTH, HEIGHT, objects)
-
-    visual_execution(objects, best_individual)
-
-
 def main():
     trap_positions = [
-        (300, 175),
-        (120, 550),
-        (565, 300),
+        (100, 100),
+        (200, 200),
+        (300, 300),
         (400, 400),
-        (700, 297),
-        (238, 600),
+        (500, 500),
+        (600, 600),
     ]
     traps = [
         Object(trap_positions[i][0], trap_positions[i][1], RED, "trap")
@@ -160,31 +145,30 @@ def main():
     # Liste de positions pour la nourriture (chaque objet a 6 positions)
     food_positions = [
         [
-            (100, 100),
-            (200, 50),
-            (300, 100),
-            (400, 50),
-            (500, 100),
-            (600, 150),
-        ],  # Premier objet de nourriture
+            (400, 360),
+            (100, 360),
+            (200, 360),
+            (300, 360),
+            (600, 360),
+            (700, 360),
+        ],  # Positions pour le premier objet de nourriture
         [
-            (100, 500),
-            (200, 550),
-            (300, 500),
-            (400, 550),
-            (500, 500),
-            (600, 550),
-        ],  # Deuxième objet de nourriture
-        [
+            (50, 100),
+            (100, 150),
             (150, 200),
-            (250, 250),
-            (350, 300),
-            (450, 350),
-            (550, 400),
-            (650, 450),
-        ],  # Troisième objet de nourriture
+            (200, 250),
+            (250, 300),
+            (300, 350),
+        ],  # Positions pour le deuxième objet de nourriture
+        [
+            (75, 125),
+            (125, 175),
+            (175, 225),
+            (225, 275),
+            (275, 325),
+            (325, 375),
+        ],  # Positions pour le troisième objet de nourriture
     ]
-
     food_objects = [
         Object(
             food_positions[i][0][0],
@@ -199,31 +183,30 @@ def main():
     # Liste de positions pour l'eau (3 objets)
     water_positions = [
         [
-            (50, 200),
-            (150, 250),
-            (250, 300),
-            (350, 350),
-            (450, 400),
-            (550, 450),
-        ],  # Premier objet d'eau
+            (150, 100),
+            (200, 150),
+            (250, 200),
+            (300, 250),
+            (350, 300),
+            (400, 350),
+        ],  # Positions pour le premier objet d'eau
         [
-            (100, 650),
-            (200, 700),
-            (300, 650),
-            (400, 700),
-            (500, 650),
-            (600, 700),
-        ],  # Deuxième objet d'eau
+            (100, 50),
+            (150, 100),
+            (200, 150),
+            (250, 200),
+            (300, 250),
+            (350, 300),
+        ],  # Positions pour le deuxième objet d'eau
         [
-            (150, 50),
-            (250, 100),
-            (350, 150),
-            (450, 200),
-            (550, 250),
-            (650, 300),
-        ],  # Troisième objet d'eau
+            (125, 75),
+            (175, 125),
+            (225, 175),
+            (275, 225),
+            (325, 275),
+            (375, 325),
+        ],  # Positions pour le troisième objet d'eau
     ]
-
     water_objects = [
         Object(
             water_positions[i][0][0],
@@ -236,8 +219,8 @@ def main():
     ]
     objects = traps + food_objects + water_objects
 
-    # visual_execution(objects)
-    genetic_execution(num_generations=5, objects=objects)
+    visual_execution(objects)
+    # genetic_execution(50, 50, 0.1, objects)
 
 
 if __name__ == "__main__":

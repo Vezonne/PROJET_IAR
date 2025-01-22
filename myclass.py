@@ -2,7 +2,6 @@ import pygame
 import pygame.gfxdraw
 import math
 import random
-import AlgoGenetique as AG
 
 # Couleurs
 WHITE = (247, 247, 255)
@@ -25,10 +24,16 @@ class Object:
         self.type = obj_type  # "food", "water" ou "trap"
         self.radius = 16
         self.positions = positions or []  # Liste des positions, ou vide si non fournie
-        self.current_position_index = 0
+        self.position_index = 0
 
     def draw(self, screen):
         pygame.draw.circle(screen, self.color, (self.x, self.y), self.radius)
+
+    def move_to_next_position(self):
+        """Passe à la prochaine position dans la liste ou revient à la première."""
+        if self.positions:
+            self.position_index = (self.position_index + 1) % len(self.positions)
+            self.x, self.y = self.positions[self.position_index]
 
     def draw_toric_object(self, screen, width, height):
         """Dessine un objet avec toricité (répétition aux bords)."""
@@ -43,14 +48,77 @@ class Object:
 
 
 class SensorimotorLink:
-    def __init__(self, sensor, motor, transfer_function):
+    def __init__(self, sensor, param=None):
         self.sensor = sensor
-        self.motor = motor
-        self.transfer_function = transfer_function
+        self.param = []
 
-    def compute_motor_command(self, battery_level):
-        # Utilise la valeur du capteur et le niveau de la batterie pour générer une commande moteur
-        return self.transfer_function(self.sensor.value, battery_level)
+        if param is not None:
+            self.param = param
+        else:
+            for i in range(9):
+                start = 0
+                end = 99
+
+                if i == 4:
+                    start = self.param[2]
+                    end = 99
+
+                self.param.append(random.randint(start, end))
+
+    def get_param(self):
+        return self.param
+
+    def set_param(self, param):
+        self.param = param
+
+    def update_param(self, index, value):
+        self.param[index] = value
+
+    def transfer_function(self, battery_level):
+        # Fonction de transfert pour générer la commande moteur
+        input = self.sensor.value
+
+        init_offset = 200 / 99 * self.param[0] - 100
+        gradient1 = math.tan(math.pi / 99 * self.param[1] - math.pi / 2)
+        threshold1 = self.param[2] + 1
+        gradient2 = math.tan(math.pi / 99 * self.param[3] - math.pi / 2)
+        threshold2 = self.param[4] + 1
+        gradient3 = math.tan(math.pi / 99 * self.param[5] - math.pi / 2)
+        slope_modulation = 1 / 99 * self.param[6]
+        offset_modulation = 2 / 99 * self.param[7] - 1
+        battery_number = int(self.param[8] % 2)
+
+        if input < threshold1:
+            output = init_offset + gradient1 * input
+
+        elif input < threshold2:
+            output = (init_offset + gradient1 * threshold1) + gradient2 * (
+                input - threshold1
+            )
+
+        else:
+            output = (
+                (
+                    init_offset
+                    + gradient1 * threshold1
+                    + gradient2 * threshold2
+                    - threshold1
+                )
+                + gradient3 * input
+                - threshold2
+            )
+
+        output = output + ((battery_level[battery_number] / 2) * offset_modulation)
+        output = output + (
+            output * (((battery_level[battery_number] - 100) / 100) * slope_modulation)
+        )
+
+        if output > 100:
+            output = 100
+        elif output < -100:
+            output = -100
+
+        return output / 100
 
 
 class Sensor:
@@ -64,7 +132,7 @@ class Sensor:
         self.rad = rad
         self.value = 0
         self.screen = None
-        self.draw_sensror = False
+        self.draw_sensor = False
 
     def update(self, x, y, angle, objects):
         self.x = x
@@ -104,7 +172,7 @@ class Sensor:
                         sens_obj_x = obj.x
                         sens_obj_y = obj.y
 
-        if self.draw_sensror:
+        if self.draw_sensor:
             if self.x != sens_obj_x or self.y != sens_obj_y:
                 pygame.draw.line(
                     self.screen,
@@ -114,9 +182,9 @@ class Sensor:
                     1,
                 )
 
-    def set_screen(self, screen, draw_sensror=False):
+    def set_screen(self, screen, draw_sensor=False):
         self.screen = screen
-        self.draw_sensror = draw_sensror
+        self.draw_sensor = draw_sensor
 
     def draw(self, screen):
         """Dessine le champ de vision des capteurs."""
@@ -144,6 +212,7 @@ class Sensor:
             # Calculer les coordonnées du point sur le bord du champ de vision
             x = self.x + self.range * math.cos(self.angle + rad)
             y = self.y + self.range * math.sin(self.angle + rad)
+
             points.append((x, y))
 
         # Dessiner le secteur sur la surface semi-transparente
@@ -151,14 +220,6 @@ class Sensor:
 
         # Superposer la surface semi-transparente à l'écran
         screen.blit(overlay, (0, 0))
-
-
-class Motor:
-    def __init__(self):
-        self.speed = 0
-
-    def update_speed(self, command):
-        self.speed = command
 
 
 def ajuster_coordonnees_toriques(x, y, largeur, hauteur):
@@ -177,10 +238,12 @@ class Robot:
         self.angle = 0
         self.speed_left = 0
         self.speed_right = 0
-        self.battery1 = 100
-        self.battery2 = 100
+        self.battery1 = 200
+        self.battery2 = 200
         self.alive = True
         self.sensor_range = 350
+        self.param_left_wheel = random.randint(0, 99)
+        self.param_right_wheel = random.randint(0, 99)
 
         left_rad = -math.pi / 2
         right_rad = math.pi / 2
@@ -195,61 +258,66 @@ class Robot:
             "trap_right": Sensor("trap", x, y, BLUE, self.sensor_range, right_rad),
         }
 
-        # Initialisation des moteurs
-        self.motors = {"left": Motor(), "right": Motor()}
-
         # Initialisation des liens sensorimoteurs
-        self.links = [
-            SensorimotorLink(
-                self.sensors["food_left"], self.motors["left"], self.transfer_function
-            ),
-            SensorimotorLink(
-                self.sensors["food_right"], self.motors["right"], self.transfer_function
-            ),
-            SensorimotorLink(
-                self.sensors["water_left"], self.motors["left"], self.transfer_function
-            ),
-            SensorimotorLink(
-                self.sensors["water_right"],
-                self.motors["right"],
-                self.transfer_function,
-            ),
-            SensorimotorLink(
-                self.sensors["trap_left"], self.motors["left"], self.transfer_function
-            ),
-            SensorimotorLink(
-                self.sensors["trap_right"], self.motors["right"], self.transfer_function
-            ),
+        self.left_links = [
+            SensorimotorLink(self.sensors["food_left"]),
+            SensorimotorLink(self.sensors["food_left"]),
+            SensorimotorLink(self.sensors["food_left"]),
+            SensorimotorLink(self.sensors["water_left"]),
+            SensorimotorLink(self.sensors["water_left"]),
+            SensorimotorLink(self.sensors["water_left"]),
+            SensorimotorLink(self.sensors["trap_left"]),
+            SensorimotorLink(self.sensors["trap_left"]),
+            SensorimotorLink(self.sensors["trap_left"]),
         ]
 
-    def transfer_function(self, sensor_value, battery_level):
-        # Transforme le signal des capteurs en commande moteur ajustée en fonction du niveau de batterie
-        return sensor_value * (battery_level / 100)
+        self.right_links = [
+            SensorimotorLink(self.sensors["food_right"]),
+            SensorimotorLink(self.sensors["food_right"]),
+            SensorimotorLink(self.sensors["food_right"]),
+            SensorimotorLink(self.sensors["water_right"]),
+            SensorimotorLink(self.sensors["water_right"]),
+            SensorimotorLink(self.sensors["water_right"]),
+            SensorimotorLink(self.sensors["trap_right"]),
+            SensorimotorLink(self.sensors["trap_right"]),
+            SensorimotorLink(self.sensors["trap_right"]),
+        ]
 
-    def evaluate_transfer_function(self, transfer_function):
-        # Évalue la performance de la fonction de transfert par un calcul de fitness
-        fitness = 0
-        for _ in range(100):  # Simuler 100 étapes
-            sensor_value = random.uniform(0, 1)
-            battery_level = random.uniform(0, 100)
-            motor_command = transfer_function(sensor_value, battery_level)
-            fitness += motor_command
-        return fitness
+    def get_all_param(self):
+        all_param = []
+        for link in self.left_links:
+            all_param += link.get_param()
+        all_param += self.param_left_wheel
+        all_param += self.param_right_wheel
+        return
 
-    def optimize_transfer_functions(self):
-        # Implémenter l'optimisation de la fonction de transfert avec un algorithme génétique
-        pass
+    def set_all_param(self, all_param):
+        for i in range(len(self.left_links)):
+            self.left_links[i].set_param(all_param[i * 9 : i * 9 + 9])
+            self.right_links[i].set_param(all_param[i * 9 : i * 9 + 9])
+        self.param_left_wheel = all_param[-2]
+        self.param_right_wheel = all_param[-1]
 
-    def react_to_sensors(self):
-        # Simple réaction selon les capteurs, ajustement de la direction en fonction des valeurs
-        food_left_value = self.sensors["food_left"].value
-        food_right_value = self.sensors["food_right"].value
-        if food_left_value > food_right_value:
-            self.set_wheel_speeds(ROBOT_SPEED * 0.5, ROBOT_SPEED)  # Tourner à gauche
-        elif food_right_value > food_left_value:
-            self.set_wheel_speeds(ROBOT_SPEED, ROBOT_SPEED * 0.5)  # Tourner à droite
-        else:
-            self.set_wheel_speeds(ROBOT_SPEED, ROBOT_SPEED)  # Avancer droit
+    def activation_function(self):
+        battery_level = self.battery1, self.battery2
+        left_sig = 6 / 99 * self.param_left_wheel - 3
+        right_sig = 6 / 99 * self.param_right_wheel - 3
+
+        link_sum = 0
+        for link in self.left_links:
+            link_sum += link.transfer_function(battery_level)
+
+        output_left = 1 / (1 + math.exp(-link_sum)) * 2 * left_sig - left_sig
+        output_left = output_left / left_sig * 10
+
+        link_sum = 0
+        for link in self.right_links:
+            link_sum += link.transfer_function(battery_level)
+
+        output_right = 1 / (1 + math.exp(-link_sum)) * 2 * right_sig - right_sig
+        output_right = output_right / right_sig * 10
+
+        return output_left, output_right
 
     def update(self, width, height, objects):
         # print("ROBOT objects: " + str(objects))
@@ -257,11 +325,16 @@ class Robot:
         self.update_sensors(
             self.x, self.y, self.angle, objects
         )  # Met à jour les valeurs des capteurs
-        self.react_to_sensors()  # Réagit selon les capteurs
-        self.check_collision(objects, width, height)  # Vérifie les collisions
+        left_speed, right_speed = (
+            self.activation_function()
+        )  # Calcule la réaction du robot
+        self.set_wheel_speeds(
+            left_speed, right_speed
+        )  # Met à jour les vitesses des roues
         self.x += (self.speed_left + self.speed_right) / 2 * math.cos(self.angle)
         self.y += (self.speed_left + self.speed_right) / 2 * math.sin(self.angle)
         self.angle += (self.speed_right - self.speed_left) / (2 * ROBOT_RADIUS)
+        self.check_collision(objects, width, height)  # Vérifie les collisions
 
         # Consomme de l'énergie
         if self.battery1 > 0:
@@ -312,21 +385,17 @@ class Robot:
         for sensor in self.sensors.values():
             sensor.draw(screen)
 
-    def move_object_randomly(self, obj, width, height):
-        # Appliquer la toricité lors du déplacement de l'objet
-        obj.x, obj.y = ajuster_coordonnees_toriques(obj.x, obj.y, width, height)
-
     def check_collision(self, objects, width, height):
         """Vérifie les collisions avec les objets en utilisant une distance torique."""
         for obj in objects:
             distance = self._toric_distance(self.x, self.y, obj.x, obj.y, width, height)
             if distance < (ROBOT_RADIUS + obj.radius):
                 if obj.type == "food":
-                    self.battery1 = min(100, self.battery1 + 20)
-                    self.move_object_randomly(obj, width, height)
+                    self.battery1 = min(200, self.battery1 + 20)
+                    obj.move_to_next_position()  # Déplace l'objet à la prochaine position
                 elif obj.type == "water":
-                    self.battery2 = min(100, self.battery2 + 20)
-                    self.move_object_randomly(obj, width, height)
+                    self.battery2 = min(200, self.battery2 + 20)
+                    obj.move_to_next_position()  # Déplace l'objet à la prochaine position
                 elif obj.type == "trap":
                     self.alive = False
 
