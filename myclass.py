@@ -153,10 +153,10 @@ class Sensor:
         y_to_obj = self.y
         x_from_obj = self.x
         y_from_obj = self.y
+        dist_act = self.range + 1
 
         for obj in objects:
             if obj.type == self.sensor_type:
-                dist_act = self.range + 1
                 tor_pos = []
                 for i in range(-1, 2):
                     for j in range(-1, 2):

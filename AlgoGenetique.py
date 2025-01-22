@@ -1,7 +1,7 @@
+from concurrent.futures import ProcessPoolExecutor
 import random
 import numpy as np
 from tqdm import tqdm
-
 from myclass import *
 
 
@@ -29,28 +29,22 @@ class GeneticAlgorithm:
         # Génère un individu avec des paramètres aléatoires pour les liens
         return [random.uniform(0, 99) for _ in range(83)]
 
-    def evaluate_fitness(self, param, WIDTH, HEIGHT, objects):
+    def evaluate_fitness(self, param, width, height, objects):
         fitness = 0
-
         pygame.init()
-        robot = Robot(WIDTH // 2, HEIGHT // 2, WIDTH, HEIGHT)
+        robot = Robot(width // 2, height // 2, width, height)
         robot.set_all_param(param)
+        max_time = 1000
 
-        max_time = 10_000
         for i in range(max_time):
             # Vérifier si le robot est mort
             if not robot.alive:
-                running = False  # Arrêter la boucle principale si le robot est mort
+                break
 
-            for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    running = False
-
-            robot.update(WIDTH, HEIGHT, objects)
+            robot.update(width, height, objects)
             fitness += robot.battery1 + robot.battery2 / 400
 
         pygame.quit()
-
         return fitness
 
     def crossover(self, parent1, parent2):
@@ -76,12 +70,7 @@ class GeneticAlgorithm:
             )
 
             mutated_param = int(mutated_binary, 2)
-
-            if mutated_param > 99:
-                mutated_param = 99
-
-            mutated_list.append(mutated_param)
-
+            mutated_list.append(min(mutated_param, 99))
         return mutated_list
 
     def select_parents(self, fitnesses):
@@ -91,29 +80,61 @@ class GeneticAlgorithm:
             prob.append(f / fitnesses_tot)
         return random.choices(self.population, k=2, weights=prob)
 
-    def evolve(self, WIDTH, HEIGHT, objects):
+    def parallel_evaluate_fitness(self, population, width, height, objects, generation):
+        with ProcessPoolExecutor() as executor:
+            fitnesses = list(
+                tqdm(
+                    executor.map(
+                        self.evaluate_fitness,
+                        population,
+                        [width] * len(population),
+                        [height] * len(population),
+                        [objects] * len(population),
+                    ),
+                    total=len(population),
+                    desc=f"Generation {generation + 1} progress",
+                )
+            )
+        return fitnesses
+
+    def evolve(self, width, height, objects):
         self.initialize_population()
         for generation in range(self.generations):
+            fitnesses = self.parallel_evaluate_fitness(
+                self.population, width, height, objects, generation
+            )
             new_population = []
-            fitnesses = [
-                self.evaluate_fitness(ind, WIDTH, HEIGHT, objects)
-                for ind in tqdm(
-                    self.population, desc=f"Generation {generation + 1} progress"
-                )
-            ]
+
             for _ in range(self.population_size):
                 parent1, parent2 = self.select_parents(fitnesses)
                 child = self.crossover(parent1, parent2)
                 child = self.mutate(child)
                 new_population.append(child)
+
             self.population = new_population
 
             # Affichage de la génération actuelle
             print(
-                f"Generation {generation + 1}/{self.generations} completed. Fitness Average: {np.mean(fitnesses):.2f} Fitness Min: {np.min(fitnesses):.2f} Fitness Max: {np.max(fitnesses):.2f}"
+                f"Generation {generation + 1}/{self.generations} completed."
+                f"Fitness Average: {np.mean(fitnesses):.2f}"
+                f"Fitness Min: {np.min(fitnesses):.2f}"
+                f"Fitness Max: {np.max(fitnesses):.2f}"
             )
-        best_individual = max(
-            self.population,
-            key=lambda ind: self.evaluate_fitness(ind, WIDTH, HEIGHT, objects),
+
+        best_individual = self.get_best_individual(
+            self.population, width, height, objects
         )
+        return best_individual
+
+    def get_best_individual(self, population, width, height, objects):
+        best_individual = None
+        best_fitness = float("-inf")
+
+        # Barre de progression sur la population
+        for ind in tqdm(population, desc="Évaluation des individus"):
+            fitness = self.evaluate_fitness(ind, width, height, objects)
+            if fitness > best_fitness:
+                best_individual = ind
+                best_fitness = fitness
+
         return best_individual

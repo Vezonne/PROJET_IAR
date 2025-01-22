@@ -36,7 +36,7 @@ def visual_execution(objects, param=None):
     # Boucle principale
     while running:
         screen.fill(GREY)
-        clock.tick(60)
+        clock.tick(30)
 
         # Vérifier si le robot est mort
         if not robot.alive:
