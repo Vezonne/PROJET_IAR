@@ -156,6 +156,7 @@ class Sensor:
 
         for obj in objects:
             if obj.type == self.sensor_type:
+                dist_act = self.range + 1
                 tor_pos = []
                 for i in range(-1, 2):
                     for j in range(-1, 2):
@@ -173,7 +174,7 @@ class Sensor:
                     # print("pos: ", (obj_x, obj_y))
                     # print("\tdx, dy: ", (dx, dy))
                     # print("\tdistance: ", distance)
-                    if distance > self.range:
+                    if distance > self.range or distance > dist_act:
                         continue
 
                     obj_angle = math.atan2(dy, dx)
@@ -186,6 +187,7 @@ class Sensor:
                     if start_angle <= obj_angle <= end_angle:
                         self.value = max(self.value, (1 - distance / self.range) * 100)
                         if self.value == (1 - distance / self.range) * 100:
+                            dist_act = distance
                             x_obj = obj.x
                             y_obj = obj.y
                             x_to_obj = self.x + dx

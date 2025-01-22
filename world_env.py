@@ -252,8 +252,8 @@ def main():
 
     # param_1 = [99 for _ in range(83)]
 
-    #visual_execution(objects=objects)
-    genetic_execution(num_generations=1, objects=objects)
+    # visual_execution(objects=objects)
+    genetic_execution(num_generations=5, objects=objects)
 
 
 if __name__ == "__main__":
