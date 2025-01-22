@@ -391,10 +391,10 @@ class Robot:
             distance = self._toric_distance(self.x, self.y, obj.x, obj.y, width, height)
             if distance < (ROBOT_RADIUS + obj.radius):
                 if obj.type == "food":
-                    self.battery1 = min(200, self.battery1 + 20)
+                    self.battery1 = 200
                     obj.move_to_next_position()  # Déplace l'objet à la prochaine position
                 elif obj.type == "water":
-                    self.battery2 = min(200, self.battery2 + 20)
+                    self.battery2 = 200
                     obj.move_to_next_position()  # Déplace l'objet à la prochaine position
                 elif obj.type == "trap":
                     self.alive = False
