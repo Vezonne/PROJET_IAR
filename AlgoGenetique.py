@@ -33,7 +33,7 @@ class GeneticAlgorithm:
         fitness = 0
 
         pygame.init()
-        robot = Robot(WIDTH // 2, HEIGHT // 2)
+        robot = Robot(WIDTH // 2, HEIGHT // 2, WIDTH, HEIGHT)
         robot.set_all_param(param)
 
         max_time = 10_000

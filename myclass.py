@@ -162,17 +162,17 @@ class Sensor:
                         tor_pos.append(
                             (obj.x + i * self.width, obj.y + j * self.height)
                         )
-                print("objects: ", obj.type)
-                print("obj pos: ", (obj.x, obj.y))
-                print("tor_pos: ", tor_pos)
+                # print("objects: ", obj.type)
+                # print("obj pos: ", (obj.x, obj.y))
+                # print("tor_pos: ", tor_pos)
                 for obj_x, obj_y in tor_pos:
                     dx = obj_x - self.x
                     dy = obj_y - self.y
 
                     distance = math.sqrt(dx**2 + dy**2)
-                    print("pos: ", (obj_x, obj_y))
-                    print("\tdx, dy: ", (dx, dy))
-                    print("\tdistance: ", distance)
+                    # print("pos: ", (obj_x, obj_y))
+                    # print("\tdx, dy: ", (dx, dy))
+                    # print("\tdistance: ", distance)
                     if distance > self.range:
                         continue
 
@@ -180,8 +180,8 @@ class Sensor:
                     start_angle = min(self.angle, self.angle + self.rad)
                     end_angle = max(self.angle, self.angle + self.rad)
 
-                    print("\tangle: ", obj_angle)
-                    print("\tvalue: ", (1 - distance / self.range) * 100)
+                    # print("\tangle: ", obj_angle)
+                    # print("\tvalue: ", (1 - distance / self.range) * 100)
 
                     if start_angle <= obj_angle <= end_angle:
                         self.value = max(self.value, (1 - distance / self.range) * 100)
@@ -193,8 +193,8 @@ class Sensor:
                             x_from_obj = obj.x - dx
                             y_from_obj = obj.y - dy
 
-                    print("Value: ", self.value)
-                    print()
+                    # print("Value: ", self.value)
+                    # print()
 
         if self.draw_sensor:
             if self.x != x_to_obj or self.y != y_to_obj:

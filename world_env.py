@@ -36,7 +36,7 @@ def visual_execution(objects, param=None):
     # Boucle principale
     while running:
         screen.fill(GREY)
-        clock.tick(10)
+        clock.tick(60)
 
         # Vérifier si le robot est mort
         if not robot.alive:
@@ -122,7 +122,7 @@ def visual_execution(objects, param=None):
         screen.blit(position_text, (10, 110))
 
         pygame.display.flip()
-        running = ask_to_continue()
+        # running = ask_to_continue()
 
     pygame.quit()
 
@@ -252,8 +252,8 @@ def main():
 
     # param_1 = [99 for _ in range(83)]
 
-    visual_execution(objects=objects)
-    # genetic_execution(num_generations=5, objects=objects)
+    #visual_execution(objects=objects)
+    genetic_execution(num_generations=1, objects=objects)
 
 
 if __name__ == "__main__":
