@@ -1,3 +1,4 @@
+import csv
 from concurrent.futures import ProcessPoolExecutor
 import random
 import numpy as np
@@ -31,7 +32,6 @@ class GeneticAlgorithm:
 
     def evaluate_fitness(self, param, width, height, objects):
         fitness = 0
-        pygame.init()
         robot = Robot(width // 2, height // 2, width, height)
         robot.set_all_param(param)
         max_time = 1000
@@ -44,7 +44,6 @@ class GeneticAlgorithm:
             robot.update(width, height, objects)
             fitness += robot.battery1 + robot.battery2 / 400
 
-        pygame.quit()
         return fitness
 
     def crossover(self, parent1, parent2):
@@ -83,48 +82,75 @@ class GeneticAlgorithm:
     def parallel_evaluate_fitness(self, population, width, height, objects, generation):
         with ProcessPoolExecutor() as executor:
             fitnesses = list(
-                tqdm(
-                    executor.map(
-                        self.evaluate_fitness,
-                        population,
-                        [width] * len(population),
-                        [height] * len(population),
-                        [objects] * len(population),
-                    ),
-                    total=len(population),
-                    desc=f"Generation {generation + 1} progress",
+                executor.map(
+                    self.evaluate_fitness,
+                    population,
+                    [width] * len(population),
+                    [height] * len(population),
+                    [objects] * len(population),
                 )
             )
         return fitnesses
 
-    def evolve(self, width, height, objects):
-        self.initialize_population()
-        for generation in range(self.generations):
-            fitnesses = self.parallel_evaluate_fitness(
-                self.population, width, height, objects, generation
-            )
-            new_population = []
+    def evolve(self, width, height, objects, output_file="fitness_stats.csv"):
+        pygame.init()
 
-            for _ in range(self.population_size):
-                parent1, parent2 = self.select_parents(fitnesses)
-                child = self.crossover(parent1, parent2)
-                child = self.mutate(child)
-                new_population.append(child)
+        fitness_stats = []
+        best_individual = []
+        best_generation = 0
+        best_fitness = -1
 
-            self.population = new_population
+        try:
+            self.initialize_population()
+            for generation in tqdm(
+                range(self.generations), desc="Evolution of population"
+            ):
+                fitnesses = self.parallel_evaluate_fitness(
+                    self.population, width, height, objects, generation
+                )
 
-            # Affichage de la génération actuelle
-            print(
-                f"Generation {generation + 1}/{self.generations} completed."
-                f"Fitness Average: {np.mean(fitnesses):.2f}"
-                f"Fitness Min: {np.min(fitnesses):.2f}"
-                f"Fitness Max: {np.max(fitnesses):.2f}"
-            )
+                if np.max(fitnesses) > best_fitness:
+                    best_individual = self.population[np.argmax(fitnesses)]
+                    best_fitness = np.max(fitnesses)
+                    best_generation = generation +1
 
-        best_individual = self.get_best_individual(
-            self.population, width, height, objects
-        )
-        return best_individual
+                avg_fitness = np.mean(fitnesses)
+                min_fitness = np.min(fitnesses)
+                max_fitness = np.max(fitnesses)
+                fitness_stats.append(
+                    {
+                        "generation": generation + 1,
+                        "average": avg_fitness,
+                        "min": min_fitness,
+                        "max": max_fitness,
+                    }
+                )
+
+                # Affichage de la génération actuelle
+                # print(
+                #     f"Generation {generation + 1}/{self.generations} completed."
+                #     f"Fitness Average: {avg_fitness:.2f}"
+                #     f"Fitness Min: {min_fitness:.2f}"
+                #     f"Fitness Max: {max_fitness:.2f}"
+                # )
+
+                new_population = []
+
+                for _ in range(self.population_size):
+                    parent1, parent2 = self.select_parents(fitnesses)
+                    child = self.crossover(parent1, parent2)
+                    child = self.mutate(child)
+                    new_population.append(child)
+
+                self.population = new_population
+
+            # Sauvegarde des statistiques de fitness
+            self.save_fitness_stats(fitness_stats, output_file)
+
+            return best_individual, best_fitness, best_generation
+
+        finally:
+            pygame.quit()
 
     def get_best_individual(self, population, width, height, objects):
         best_individual = None
@@ -138,3 +164,12 @@ class GeneticAlgorithm:
                 best_fitness = fitness
 
         return best_individual
+
+    def save_fitness_stats(self, stats, filename):
+        filename = "./data/" + filename
+        with open(filename, mode="w", newline="") as file:
+            writer = csv.DictWriter(
+                file, fieldnames=["generation", "average", "min", "max"]
+            )
+            writer.writeheader()
+            writer.writerows(stats)
