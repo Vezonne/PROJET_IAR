@@ -50,6 +50,7 @@ def visual_execution(objects, param=None, video_filename=None):
     # Boucle principale
     while running:
         screen.fill(GREY)
+        clock.tick(fps)
 
         # Vérifier si le robot est mort
         if not robot.alive:

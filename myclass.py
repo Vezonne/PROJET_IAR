@@ -9,6 +9,8 @@ GREY = (50, 60, 68)
 RED = (189, 72, 125)
 GREEN = (76, 173, 139)
 BLUE = (57, 88, 146)
+PURPLE = (199, 0, 57)
+YELLOW = (255, 195, 0)
 
 # Paramètres du robot
 ROBOT_RADIUS = 10
@@ -231,7 +233,7 @@ class Sensor:
 
         # Couleurs semi-transparentes
         r, g, b = self.color
-        color = (r, g, b, 20)
+        color = (r, g, b, 15)
 
         # Créer une surface semi-transparente
         overlay = pygame.Surface((width, height), pygame.SRCALPHA)
@@ -289,7 +291,7 @@ class Robot:
                 "food",
                 x,
                 y,
-                GREEN,
+                YELLOW,
                 self.sensor_range,
                 left_rad,
                 self.width,
@@ -299,7 +301,7 @@ class Robot:
                 "food",
                 x,
                 y,
-                BLUE,
+                PURPLE,
                 self.sensor_range,
                 right_rad,
                 self.width,
@@ -309,7 +311,7 @@ class Robot:
                 "water",
                 x,
                 y,
-                GREEN,
+                YELLOW,
                 self.sensor_range,
                 left_rad,
                 self.width,
@@ -319,7 +321,7 @@ class Robot:
                 "water",
                 x,
                 y,
-                BLUE,
+                PURPLE,
                 self.sensor_range,
                 right_rad,
                 self.width,
@@ -329,7 +331,7 @@ class Robot:
                 "trap",
                 x,
                 y,
-                GREEN,
+                YELLOW,
                 self.sensor_range,
                 left_rad,
                 self.width,
@@ -339,7 +341,7 @@ class Robot:
                 "trap",
                 x,
                 y,
-                BLUE,
+                PURPLE,
                 self.sensor_range,
                 right_rad,
                 self.width,
