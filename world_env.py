@@ -567,13 +567,23 @@ def main():
                99, 64, 93, 4, 89, 13, 39, 47, 68, 
                70, 11]
 
-    # visual_execution(objects=objects, param=param_1)
+    param_3 = [28, 99, 54, 67, 74, 76, 3, 44, 99, 
+               67, 65, 32, 98, 71, 89, 76, 19, 13, 
+               30, 34, 12, 99, 51, 49, 98, 69, 33, 
+               99, 49, 83, 65, 45, 19, 32, 56, 99, 
+               14, 21, 42, 86, 67, 71, 96, 35, 63, 
+               71, 96, 81, 97, 74, 67, 98, 61, 12, 
+               97, 67, 97, 13, 99, 49, 97, 59, 33, 
+               99, 48, 42, 37, 32, 35, 21, 27, 58, 
+               78, 52, 40, 35, 85, 4, 97, 10, 40, 
+               66, 69]  # gen 71 fitness 177344.625
+
+    visual_execution(objects=objects, param=param_2)
     # param = genetic_execution(num_generations=250, objects=objects)
 
-    visual_execution(objects=objects, param=param_1)
-    visualise_tranfer_fonction(param_1)
-    # visual_execution(objects=objects1, param=param, video_filename="video_env1.mp4")
-    # visual_execution(objects=objects2, param=param, video_filename="video_env2.mp4")
+    # visualise_tranfer_fonction(param_1)
+    visual_execution(objects=objects1, param=param_2, video_filename="video_env1.mp4")
+    visual_execution(objects=objects2, param=param_2, video_filename="video_env2.mp4")
 
 
 if __name__ == "__main__":
